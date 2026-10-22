@@ -18,4 +18,12 @@
   html[data-system-shade="on"][data-system-shade-canvas] {
     background-color: Canvas !important;
   }
+  /* Reverse polarity for content media only. The root's tone/gamut remains. */
+  html[data-system-shade="on"][data-system-shade-media="on"] [data-veilume-media] {
+    filter: invert(1) hue-rotate(180deg) !important;
+  }
+  /* A media element in the top layer has escaped the root: no double inverse. */
+  html[data-system-shade="on"][data-system-shade-media="on"] [data-veilume-media]:is(:modal, :popover-open, :fullscreen) {
+    filter: none !important;
+  }
 }

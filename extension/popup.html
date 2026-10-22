@@ -25,6 +25,7 @@
         <button type="button" data-mode="light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"></path></svg>原貌</button>
       </div>
       <div class="preset-row"><label for="filter-preset">显示效果</label><select id="filter-preset"><option value="balanced">均衡（推荐）</option><option value="dim">低亮</option></select><button id="reset-preset" class="text-button" type="button" hidden>恢复推荐</button></div>
+      <div class="media-row setting-row"><label for="preserve-media">保留媒体色彩<small>图片、视频与画布 · 默认开启</small></label><input id="preserve-media" class="check-switch" type="checkbox" aria-describedby="media-note" checked></div>
       <p class="helper" id="mode-note">系统深色时统一反色；系统浅色时恢复原貌。</p>
     </section>
     <section class="site-card" aria-labelledby="site-heading">
@@ -33,7 +34,7 @@
       <div class="setting-row"><label for="force">强制反色<small>忽略“页面已是深色”的判断</small></label><input id="force" class="check-switch" type="checkbox" disabled></div>
     </section>
     <details id="diagnostics" class="diagnostics"><summary>识别详情<span aria-hidden="true">＋</span></summary><p id="detection-detail">检测中…</p><p id="warning" class="warning" hidden></p></details>
-    <p class="engine-note">统一处理整个页面，图片、视频和地图也会反色。</p>
+    <p class="engine-note" id="media-note">媒体近似原色，仍受亮度影响；图标与装饰照常变暗。</p>
     <p id="error" role="alert" class="error" hidden></p>
   </main>
   <footer class="popup-footer"><button id="options" class="text-button" type="button">偏好与站点管理 ↗</button><button id="recheck" class="text-button" type="button">↻ 重新检测</button></footer>

@@ -17,7 +17,7 @@ async function ensureContent(tabId) {
     if (status) return { ok: true };
   } catch { /* Connect pages opened before installation when the popup opens. */ }
   await chrome.scripting.insertCSS({ target: { tabId }, files: ["engine.css"] });
-  await chrome.scripting.executeScript({ target: { tabId }, files: ["core.js", "detector.js", "content.js"] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ["core.js", "detector.js", "media.js", "content.js"] });
   return { ok: true };
 }
 

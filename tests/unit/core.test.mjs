@@ -4,19 +4,36 @@ await import("../../extension/core.js");
 const C = globalThis.ShadeCore;
 const defaults = () => C.normalizeSettings();
 
-test("默认开启并跟随系统，原生保护开启", () => {
-  assert.deepEqual(defaults(), { version: 3, enabled: true, mode: "system", filterPreset: "balanced", protectNative: true, sites: {} });
+test("默认开启并跟随系统，原生与媒体保护开启", () => {
+  assert.deepEqual(defaults(), { version: 4, enabled: true, mode: "system", filterPreset: "balanced", preserveMedia: true, protectNative: true, sites: {} });
 });
 test("损坏的存储安全回退", () => {
   for (const value of [null, [], "bad", 42, { mode: "invalid", enabled: "false", protectNative: null, sites: [] }]) {
     assert.deepEqual(C.normalizeSettings(value), defaults());
   }
 });
-test("1.0 / 2.0 设置无损迁移，旧数据默认均衡", () => {
-  for (const version of [1, 2]) assert.deepEqual(C.normalizeSettings({version, enabled: false, mode: "dark", protectNative: false,
+test("schema 1 / 2 / 3 无损迁移，媒体保护默认开启", () => {
+  for (const version of [1, 2, 3]) assert.deepEqual(C.normalizeSettings({version, enabled: false, mode: "dark", protectNative: false,
     sites: {"x.com": {mode: "off", force: true}}}), {
-    version: 3, enabled: false, mode: "dark", filterPreset: "balanced", protectNative: false, sites: {"x.com": {mode: "off", force: true}}
+    version: 4, enabled: false, mode: "dark", filterPreset: "balanced", preserveMedia: true, protectNative: false, sites: {"x.com": {mode: "off", force: true}}
   });
+});
+test("媒体开关只接受布尔值，显式关闭持久化", () => {
+  assert.equal(C.normalizeSettings({ preserveMedia: false }).preserveMedia, false);
+  for (const preserveMedia of [null, "false", 0, {}, []]) {
+    assert.equal(C.normalizeSettings({ preserveMedia }).preserveMedia, true);
+  }
+  const s = { ...defaults(), mode: "dark", filterPreset: "dim", sites: { "x.com": { mode: "off" } } };
+  assert.deepEqual(C.patchSettings(s, { action: "global", preserveMedia: false }), { ...s, preserveMedia: false });
+  assert.equal(C.patchSettings({ ...s, preserveMedia: false }, { action: "global", preserveMedia: "true" }).preserveMedia, false);
+});
+test("媒体保护不影响暂停、系统浅色和原生让位", () => {
+  for (const preserveMedia of [true, false]) {
+    const s = { ...defaults(), preserveMedia };
+    assert.equal(C.decide({ ...s, enabled: false }, "x.com", true).reason, "disabled");
+    assert.equal(C.decide(s, "x.com", false).reason, "system-light");
+    assert.equal(C.decide(s, "x.com", true, { isDark: true }).reason, "native-dark");
+  }
 });
 test("只接受两个预设，损坏的预设回退推荐", () => {
   assert.equal(C.normalizeSettings({ filterPreset: "dim" }).filterPreset, "dim");

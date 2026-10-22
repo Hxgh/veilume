@@ -25,15 +25,18 @@ function fixture(pathname) {
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, "http://localhost:4173");
   const name = url.pathname.slice(1);
-  if (name === "lab.css" || name === "lab.js" || name === "lab-hero.svg") {
-    response.writeHead(200, { "Content-Type": name.endsWith(".css") ? "text/css" : name.endsWith(".js") ? "text/javascript" : "image/svg+xml" });
+  if (["lab.css", "lab.js", "lab-hero.svg", "media.css", "media.js", "media.svg", "media.webm"].includes(name)) {
+    response.writeHead(200, { "Content-Type": name.endsWith(".css") ? "text/css" : name.endsWith(".js") ? "text/javascript" : name.endsWith(".webm") ? "video/webm" : "image/svg+xml" });
     response.end(await readFile(new URL(name, assets))); return;
   }
-  if (["lab", "frame-lab", "transparent", "split-login", "strict-style", "canvas-fallback"].includes(name)) {
+  if (["lab", "frame-lab", "transparent", "split-login", "strict-style", "canvas-fallback", "media"].includes(name)) {
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8",
       "Content-Security-Policy": "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; frame-src 'self' http://localhost:4173; object-src 'none'" });
     if (name === "transparent") {
       response.end('<!doctype html><html><head><title>透明画布</title></head><body>透明根与透明主体</body></html>'); return;
+    }
+    if (name === "media") {
+      response.end(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>媒体保护回归</title><link rel="stylesheet" href="/media.css"><script src="/media.js" defer></script></head><body><h1>内容与界面分开处理</h1><main><picture><source srcset="/media.svg"><img id="content-photo" src="/media.svg" alt="文章中的照片"></picture><video id="content-video" poster="/media.svg" aria-label="内容视频"></video><canvas id="content-canvas" width="160" height="100"></canvas><img id="decorative" src="/media.svg" alt="抽象装饰背景"><img id="empty-alt" src="/media.svg" alt=""><img id="brand-logo" src="/media.svg" alt="品牌 logo"><img id="small" src="/media.svg" alt="小图标"><img id="presentational" role="presentation" src="/media.svg" alt="展示用"><img id="authored" src="/media.svg" alt="已有滤镜的照片"><div id="background"></div><svg id="inline-svg" viewBox="0 0 160 100"><path fill="white" d="M0 0h160v100H0z"/></svg></main><button id="add-media">添加动态媒体</button><button id="dialog-open">打开媒体对话框</button><button popovertarget="popover" id="popover-open">打开媒体 Popover</button><button id="screen-open">全屏容器</button><button id="video-open">全屏视频</button><dialog id="dialog"><img id="dialog-photo" src="/media.svg" alt="对话框照片"><button id="dialog-close">关闭</button></dialog><div id="popover" popover><img id="popover-photo" src="/media.svg" alt="弹出照片"></div><div id="screen"><img id="screen-photo" src="/media.svg" alt="全屏容器内照片"></div></body></html>`); return;
     }
     if (name === "canvas-fallback") {
       response.end('<!doctype html><html><head><title>画布不能冒充原生深色</title><link rel="stylesheet" href="/lab.css"><script src="/canvas-fallback.js" defer></script></head><body class="canvas-fallback"><canvas id="full-canvas"></canvas><div id="canvas-mask"></div></body></html>'); return;

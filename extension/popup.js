@@ -13,6 +13,10 @@
   function renderSettings() {
     $("enabled").setAttribute("aria-checked", String(settings.enabled));
     $("filter-preset").value = settings.filterPreset;
+    $("preserve-media").checked = settings.preserveMedia;
+    $("media-note").textContent = settings.preserveMedia
+      ? "媒体近似原色，仍受亮度影响；图标与装饰照常变暗。"
+      : "媒体保护已关闭，图片、视频和画布也随页面统一反色。";
     $("reset-preset").hidden = settings.filterPreset === "balanced";
     document.querySelectorAll("[data-mode]").forEach(button => button.setAttribute("aria-pressed", String(settings.mode === button.dataset.mode)));
     $("mode-note").textContent = {
@@ -33,7 +37,7 @@
     const [title, description] = UI.reasons[status.reason] || UI.reasons.unavailable;
     $("status-title").textContent = title;
     $("status-description").textContent = status.reason === "converted"
-      ? `${status.filterPreset === "dim" ? "低亮" : "均衡"}效果 · 文字、背景与图片统一变换。` : description;
+      ? `${status.filterPreset === "dim" ? "低亮" : "均衡"}效果 · ${status.preserveMedia ? "保留内容媒体色彩。" : "包括媒体在内统一反色。"}` : description;
     document.querySelector(".status-card").dataset.reason = status.reason;
     const result = status.detection || {};
     const signals = (result.signals || []).map(signal => UI.signalNames[signal]).filter(Boolean);
@@ -77,6 +81,7 @@
 
   $("enabled").addEventListener("click", () => save({ action: "global", enabled: !settings.enabled }));
   $("filter-preset").addEventListener("change", event => save({ action: "global", filterPreset: event.target.value }));
+  $("preserve-media").addEventListener("change", event => save({ action: "global", preserveMedia: event.target.checked }));
   $("reset-preset").addEventListener("click", () => save({ action: "global", filterPreset: "balanced" }));
   document.querySelectorAll("[data-mode]").forEach(button => button.addEventListener("click", () => save({ action: "global", mode: button.dataset.mode })));
   $("site-mode").addEventListener("change", event => save({ action: "site", host, mode: event.target.value }));

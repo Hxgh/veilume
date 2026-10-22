@@ -6,6 +6,7 @@
   const Detector = globalThis.ShadeDetector;
   const media = matchMedia("(prefers-color-scheme: dark)");
   const root = document.documentElement;
+  const preservation = globalThis.ShadeMedia.create(root);
   const ATTR = "data-system-shade";
   const CANVAS = "data-system-shade-canvas";
   const PRESET = "data-system-shade-preset";
@@ -35,12 +36,14 @@
       root.removeAttribute(ATTR);
       root.removeAttribute(PRESET);
     }
-    state = { ...decision, host, systemDark: media.matches, filterPreset: settings.filterPreset, detection, warning: "" };
+    preservation.setEnabled(applied && settings.preserveMedia);
+    state = { ...decision, host, systemDark: media.matches, filterPreset: settings.filterPreset, preserveMedia: settings.preserveMedia, detection, warning: "" };
     // Never claim success when an author inline !important filter blocks us.
     if (applied && matchMedia("screen").matches && !getComputedStyle(root).filter.includes("invert(1)")) {
       root.removeAttribute(ATTR);
       root.removeAttribute(CANVAS);
       root.removeAttribute(PRESET);
+      preservation.setEnabled(false);
       applied = false;
       state = { ...state, apply: false, reason: "error", warning: "网站覆盖了根元素滤镜，请将本站恢复原貌。" };
     }

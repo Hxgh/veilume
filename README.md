@@ -9,12 +9,14 @@
 
 “晦明”是暗与明的往复；**Veilume** 融合 veil 与 lumen，寓意为光线覆一层柔和的帷幕。[命名说明](docs/NAMING.md)
 
-Veilume is a local-first Chrome extension that follows your system appearance. One compositing filter transforms the whole page; two presets keep the controls simple. Images and video also change color. No telemetry, accounts, remote code, or runtime dependencies.
+Veilume is a local-first Chrome extension that follows your system appearance. One compositing filter transforms the page; two presets keep controls simple. Content-media color protection is on by default and can be switched off. It is approximate, not color-accurate. No telemetry, accounts, remote code, or runtime dependencies.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/popup-dark.png">
   <img src="docs/assets/popup-light.png" width="390" alt="晦明的中性黑白灰控制面板">
 </picture>
+
+[完整设置页预览](docs/assets/options.png)
 
 ## 安装 / Install
 
@@ -39,10 +41,23 @@ No build is needed for release ZIPs: unzip, open `chrome://extensions/`, enable 
 | 均衡（推荐） | 明暗层次清晰，默认显示效果 |
 | 低亮 | 同一算法，降低文字和高光亮度 |
 | 恢复推荐 | 一键回到均衡，不改变系统跟随方式 |
+| 保留媒体色彩（默认开启） | 为内容图片、视频及海报、Canvas 做反向补偿，可关闭 |
 | 本站外观／强制反色 | 按主机名保存例外，或纠正原生识别误判 |
 | 总开关 | 全局暂停，保留全部偏好 |
 
-预设切换即时生效并同步标签页；刷新后保留。不增加网站专用修补规则或图片豁免。
+预设与媒体开关即时生效并同步标签页，刷新后保留；不增加网站专用修补规则。
+
+## 内容媒体与装饰的区别
+
+默认开启“保留媒体色彩”，可在弹窗或设置页关闭。覆盖 `picture` / `img`、视频海报和视频帧、Canvas，支持动态新增、懒加载和尺寸变化；不读取图片像素、不抓取媒体、不重建网页 DOM。
+
+为避免重现“大背景很亮、表单很暗”，以下仍随页面统一变换：
+
+- CSS 背景图、渐变、内联 SVG、iframe，以及开放／封闭 Shadow DOM 内的媒体；不把整个嵌入界面当照片豁免。
+- 小于 64×48 CSS 像素、空 `alt`、装饰／隐藏标记、按钮或导航内的媒体，以及名称带 logo / icon / 背景等线索的图片。
+- 网站已有独立 `filter` 或混合模式的媒体，不用补偿滤镜覆盖它。
+
+分类依赖语义和尺寸，不会看懂图像内容，可能误判；透明黑图在暗底上可能看不清。关闭媒体保护可回到 2.1 的全页统一反色，选择本站“原貌”可撤销插件的全部变换。视频或图片本身进入顶层全屏时不加滤镜；容器全屏则继续保护内部媒体。
 
 ## 算法与代价
 
@@ -53,9 +68,9 @@ filter: invert(1) hue-rotate(180deg) contrast(0.88) brightness(0.95);
 filter: invert(1) hue-rotate(180deg) contrast(0.88) brightness(0.82);
 ```
 
-一套变换覆盖文字、背景、渐变、图片、Canvas、视频和 iframe 的合成画面，不逐个改写元素颜色。均衡下纯白约变为 `#0f0f0f`、纯黑约为 `#e4e4e4`；低亮约为 `#0d0d0d` 和 `#c5c5c5`。
+一套变换覆盖文字、背景、渐变和合成画面，不逐个改写元素颜色。均衡下纯白约变为 `#0f0f0f`、纯黑约为 `#e4e4e4`；低亮约为 `#0d0d0d` 和 `#c5c5c5`。
 
-**照片、地图、图表和视频也会变色，原本深色的局部可能变亮。** 修图、审稿、核对颜色或看视频时，请将本站恢复原貌。全局反色不是网站原生主题的完美替代。
+受保护媒体增加 `invert(1) hue-rotate(180deg)` 来抵消负片明暗方向，仍受预设对比度、亮度和色域截断影响，**不是精确原色或完全跳过滤镜**。不强行逆转对比度／亮度，以免放大截断。均衡下受保护白色约为 `#e4e4e4`，黑色约为 `#0f0f0f`；低亮会进一步压低高光。高饱和颜色仍可能偏移；图表校色、修图、设计审稿请使用本站“原貌”。
 
 ## 兼容与隐私
 
@@ -70,7 +85,7 @@ filter: invert(1) hue-rotate(180deg) contrast(0.88) brightness(0.82);
 
 更新时，将新文件替换到原加载目录，在扩展管理页重新加载，再刷新旧页面。目录不变即可保持扩展 ID 与设置。
 
-前身为“随色 · System Shade”。为保留同一扩展 ID 下的旧偏好，内部存储键与兼容消息名称暂时保留；1.x / 2.0 设置升级后默认使用均衡。**不同加载目录会产生新 ID，设置不会自动跨 ID 迁移。不要同时启用两份扩展。**
+前身为“随色 · System Shade”。为保留同一扩展 ID 下的旧偏好，内部存储键与兼容消息名称暂时保留；旧设置保留开关、模式、预设和例外，新增媒体保护默认开启。**不同加载目录会产生新 ID，设置不会自动跨 ID 迁移。不要同时启用两份扩展。**
 
 ## 开发与测试
 
@@ -93,7 +108,7 @@ SHADE_BROWSER=chromium npm run test:e2e
 
 CI 使用 GitHub Ubuntu 镜像预装的 Chrome 运行固定本地测试，不重复下载浏览器，也不依赖外部网站。`npm run test:smoke` 为可选公网页面抽查；`VEILUME_PRESET=dim npm run test:smoke` 测低亮。结果与真实网页截图默认忽略，不提交到 Git。
 
-`npm run demo` 启动本机演示：`http://127.0.0.1:4173/split-login`、`/lab`、`/native`。Ctrl+C 结束。
+`npm run demo` 启动本机演示：`http://127.0.0.1:4173/split-login`、`/media`、`/lab`、`/native`。Ctrl+C 结束。
 
 ## 维护
 

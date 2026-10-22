@@ -21,7 +21,7 @@ try {
   await cdp.send("Extensions.loadUnpacked", { path: extensionPath });
   const worker = context.serviceWorkers()[0] || await context.waitForEvent("serviceworker");
   const setEnabled = enabled => worker.evaluate(async ({ enabled, filterPreset }) => {
-    await chrome.storage.local.set({ systemShadeSettings: { version: 3, enabled, filterPreset, mode: "system", protectNative: true, sites: {} } });
+    await chrome.storage.local.set({ systemShadeSettings: { version: 4, enabled, filterPreset, preserveMedia: true, mode: "system", protectNative: true, sites: {} } });
   }, { enabled, filterPreset });
   async function getStatus(page) {
     return worker.evaluate(async url => {
@@ -67,6 +67,10 @@ try {
       result.state = await getStatus(page);
       result.rootFilter = await page.locator("html").evaluate(el => getComputedStyle(el).filter);
       result.title = await page.title();
+      result.media = await page.evaluate(() => ({
+        candidates: document.querySelectorAll("img, video, canvas").length,
+        protected: document.querySelectorAll("[data-veilume-media]").length
+      }));
       const after = await page.screenshot({ path: path.join(output, `${name}-after.png`) });
       result.after = brightness(after);
       // Non-account interaction: scroll ordinary document, then restore top.

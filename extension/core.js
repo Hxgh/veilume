@@ -5,7 +5,7 @@
   const MODES = ["system", "dark", "light"];
   const FILTER_PRESETS = ["balanced", "dim"];
   const SITE_MODES = ["inherit", "system", "dark", "off"];
-  const DEFAULTS = Object.freeze({ version: 3, enabled: true, mode: "system", filterPreset: "balanced", protectNative: true, sites: {} });
+  const DEFAULTS = Object.freeze({ version: 4, enabled: true, mode: "system", filterPreset: "balanced", preserveMedia: true, protectNative: true, sites: {} });
 
   function isWebURL(value) {
     try {
@@ -34,10 +34,11 @@
       }
     }
     return {
-      version: 3,
+      version: 4,
       enabled: typeof value.enabled === "boolean" ? value.enabled : true,
       mode: MODES.includes(value.mode) ? value.mode : "system",
       filterPreset: FILTER_PRESETS.includes(value.filterPreset) ? value.filterPreset : "balanced",
+      preserveMedia: typeof value.preserveMedia === "boolean" ? value.preserveMedia : true,
       protectNative: typeof value.protectNative === "boolean" ? value.protectNative : true,
       sites
     };
@@ -63,6 +64,7 @@
       if (typeof patch.enabled === "boolean") settings.enabled = patch.enabled;
       if (MODES.includes(patch.mode)) settings.mode = patch.mode;
       if (FILTER_PRESETS.includes(patch.filterPreset)) settings.filterPreset = patch.filterPreset;
+      if (typeof patch.preserveMedia === "boolean") settings.preserveMedia = patch.preserveMedia;
       if (typeof patch.protectNative === "boolean") settings.protectNative = patch.protectNative;
     } else if (patch.action === "site") {
       const host = patch.host;

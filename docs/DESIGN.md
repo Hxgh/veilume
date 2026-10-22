@@ -1,4 +1,4 @@
-# 晦明 · Veilume 2.1：整页统一变换方案
+# 晦明 · Veilume 2.2：统一变换与内容媒体保护
 
 日期：2026-10-23（Asia/Shanghai）
 
@@ -6,17 +6,17 @@
 
 早期原型分别处理文字、表单、背景与边框，却保留 URL 图片。双栏登录页中可出现表单变暗、大背景图仍亮、黑色 logo 消失、公告文字失去对比度的问题。这需要调整整体路线，不能只增加个别颜色规则。
 
-目标是**渲染结果一致性优先**：同一网页的文字和装饰使用同一个合成变换，不追求照片原色与任意网站原生主题保真同时成立。媒体变色的代价在弹窗、设置和安装说明中直接提示。
+目标是**界面与装饰一致性优先**：同一网页的文字和装饰使用同一个合成变换；2.2 应用户需求新增默认开启、可关闭的内容媒体补偿，不追求照片原色与任意网站原生主题保真同时成立。分类和色彩代价在弹窗、设置和安装说明中直接提示。
 
 验收：系统深浅切换 → 当前外观识别 → 明确策略 → 整页变换或让位 → 状态解释 → 网站例外 → 设置持久化 → 可逆恢复。除了 Chrome 固有限制，不以“后台已运行”代替实际像素验收。
 
-2.1 提供均衡／低亮两个预设，不增加连续亮度滑块、图片算法、远程规则、账号、统计、云同步、主题商店或 UI 框架。
+继续保留均衡／低亮两个预设，不增加连续亮度滑块、图像内容分析、远程规则、账号、统计、云同步、主题商店或 UI 框架。
 
 ## 2. 开源与规范参考
 
 | 来源 | 本轮参考 | 取舍 |
 | --- | --- | --- |
-| [Dark Reader CSS Filter 源码](https://github.com/darkreader/darkreader/blob/main/src/generators/css-filter.ts)（MIT） | 顶层整体反色、色相修正、screen 范围、全屏和默认画布的结构边界 | 借鉴 Filter 思路；不再使用其动态引擎，也不引入网站修补数据库或图片反向滤镜 |
+| [Dark Reader CSS Filter 源码](https://github.com/darkreader/darkreader/blob/main/src/generators/css-filter.ts)（MIT） | 顶层整体反色、色相修正、媒体反向处理、screen、全屏和默认画布边界 | 借鉴 Filter 思路；独立实现保守的内容媒体分类，不使用动态引擎或网站修补数据库 |
 | [Dark Reader 矩阵实现](https://github.com/darkreader/darkreader/blob/main/src/generators/utils/matrix.ts)（MIT） | 反色、对比度与亮度的矩阵顺序 | 验证参数含义；本项目只声明浏览器原生 CSS 滤镜，没有复制矩阵库 |
 | [shadcn/ui theming](https://ui.shadcn.com/docs/theming)、[Neutral tokens](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/themes.ts)（MIT） | background/foreground/card/border/ring 语义、中性色层次和紧凑控制 | 原生 CSS 实现相同视觉方向；不引入 React、Radix、Tailwind 或组件运行时 |
 | [Filter Effects](https://drafts.fxtf.org/filter-effects/#FilterProperty) | 根滤镜、合成及 containing block 行为 | Chrome 实测固定定位与 top layer，不把规范假设直接当兼容性结论 |
@@ -43,13 +43,25 @@ invert(1) hue-rotate(180deg) contrast(0.88) brightness(0.95)
 
 对于灰阶归一化输入 c，输出约为 `0.893 - 0.836c`。纯白落到约 15/255，纯黑落到约 228/255；不是刺眼的纯黑纯白极端。参数固定，保证全页同一规则，没有对颜色、标签或域名分别定制。
 
-实现位于 `engine.css`。静态样式只有根开关、top layer 同算法和透明默认画布输入三部分。没有遍历修改元素背景、重写内联样式或接管网站 CSSOM。
+实现位于 `engine.css`。静态样式包括根开关、top layer 同算法、透明默认画布输入和可选媒体反向补偿。没有修改元素背景、重写内联样式或接管网站 CSSOM。
 
 ### 两个显示预设
 
-均衡（默认推荐）保持亮度 95%；低亮使用相同算法和对比度，亮度为 82%。只改变一个统一的合成参数，不引入媒体豁免或域名规则。低亮灰阶输出约为 `0.7708 - 0.7216c`，白约 13/255、黑约 197/255。
+均衡（默认推荐）保持亮度 95%；低亮使用相同算法和对比度，亮度为 82%。只改变一个统一的合成参数，不引入域名规则。低亮灰阶输出约为 `0.7708 - 0.7216c`，白约 13/255、黑约 197/255。
 
 模式决定何时处理，预设决定如何显示，二者独立。切换预设即时写入本地设置并同步标签页；“恢复推荐”只重置预设。原貌、暂停和原生保护的优先级不变。根元素传递同一个亮度变量给 top layer，iframe 不重复注入。
+
+### 可选内容媒体保护（2.2）
+
+整页合成滤镜不能让一个普通后代元素真正逃出父滤镜。直接“逆转全部参数”会放大溢出和截断，也无法恢复丢失的颜色；将媒体搬到另一层则破坏布局、交互与 stacking。采用一个明确取舍：内容媒体先加 `invert(1) hue-rotate(180deg)`，抵消负片明暗方向，保留根级亮度与对比度。没有像素读取、资源重取、图片替换或网站专用规则。
+
+灰阶均衡输出约 `0.836c + 0.057`，低亮约 `0.7216c + 0.0492`。因此保护媒体的白色约 228 / 197，黑色约 15 / 13；中间色用真实截图核验。两个 hue-rotate 不保证色域外的饱和颜色可逆，透明媒体也不能凭 CSS 完整识别；UI 使用“保留媒体色彩”，不声称像素级原色或无损跳过。
+
+分类只针对顶层 light DOM 的 `img`（含 picture）、`video`（含海报）、`canvas`。尺寸至少 64×48 CSS 像素；显式空 alt、装饰或隐藏角色、按钮／导航内媒体、小图标、带 logo / icon / 背景等语义的图片不保护。已有作者滤镜或混合模式时不覆盖；video/canvas 内嵌的 fallback 不重复补偿。CSS 背景、渐变、内联 SVG、iframe、Shadow DOM 内媒体继续统一变换：不能把包含文字／UI 的整块区域错误地当照片恢复。
+
+`media.js` 用 MutationObserver、捕获 load/loadedmetadata、ResizeObserver 跟踪候选，不运行永久轮询或覆写网页原型。新增、懒加载、尺寸与语义变化在一个 animation frame 批量分类；几何读取先于标记写入，移除节点后清理引用。主题重检时复核已有媒体（不钩住 CSSOM API，因此任意 insertRule 可能到下一次重检才被重新分类）。为读取作者原样式，在同一同步任务暂移除本插件根开关与媒体开关，分类后恢复，不暴露中间帧。暂停、原貌或原生让位时断开媒体观察器并删除标记。全局开关与两个预设独立，显式关闭后刷新保持关闭。
+
+媒体自身进入顶层全屏／Popover 时已经逃出根滤镜，直接 `filter:none`，不再反向；容器进入 top layer 时，对容器用统一算法，内部媒体补偿一次。打印时两者均不生效。分类是可解释的保守启发式，不等同视觉识别；误判可关闭保护或恢复本站原貌。
 
 ### 合成边界
 
@@ -97,6 +109,7 @@ CSS 滤镜不改元素的原始计算颜色。重检时，同一个 JavaScript �
 | --- | --- |
 | core.js | 纯设置规范化、兼容迁移、主机名、决策、颜色数学 |
 | detector.js | 有界能力线索与可靠背景采样 |
+| media.js | 可关闭的内容媒体分类、动态跟踪、标记与清理 |
 | engine.css | 唯一的合成变换算法 |
 | content.js | 系统监听、主题重检、属性开关、状态与恢复 |
 | background.js | 串行设置写入、徽标、安装前页面按需接入 |
@@ -104,11 +117,11 @@ CSS 滤镜不改元素的原始计算颜色。重检时，同一个 JavaScript �
 
 所有运行时脚本位于 ISOLATED world。移除了 vendor、MAIN 代理、CSS 请求队列和运行时依赖。静态 CSS 不依赖页面允许内联样式；严格 CSP 页面有自动回归测试。
 
-body 出现且设置到位即可检测，不必等待慢 defer 脚本。DOMContentLoaded、load、系统外观变化、主题属性／样式改变、焦点／可见性恢复和 BFCache pageshow 触发重检；系统变化后做两次有限收敛检查。最短检测间隔 350ms，没有永久轮询。普通 DOM 和 CSSOM 颜色变化天然通过滤镜，不需要引擎追踪每个节点。
+body 出现且设置到位即可检测，不必等待慢 defer 脚本。DOMContentLoaded、load、系统外观变化、主题属性／样式改变、焦点／可见性恢复和 BFCache pageshow 触发重检；系统变化后做两次有限收敛检查。最短检测间隔 350ms，没有永久轮询。普通 DOM 和 CSSOM 颜色变化天然通过滤镜，只有可关闭的媒体保护需要跟踪媒体候选，不分析每个元素的颜色。
 
 ## 7. 数据、交互与安全
 
-配置保存 `enabled`、`mode`、`filterPreset`、`protectNative`、`sites`，schema 为 3；旧设置和损坏预设默认均衡。存储键与消息前缀保留旧版兼容。按完整 hostname 保存稀疏例外，后台队列串行合并，storage 事件同步标签页；拒绝原型键、无效模式和非规范 host。
+配置保存 `enabled`、`mode`、`filterPreset`、`preserveMedia`、`protectNative`、`sites`，schema 为 4；旧设置保留预设和例外，缺少媒体字段时默认 true，显式 false 不被重置。存储键与消息前缀保留旧版兼容。按完整 hostname 保存稀疏例外，后台队列串行合并，storage 事件同步标签页；拒绝原型键、无效模式和非规范 host。
 
 UI 语义色全部中性，深色背景 #171717、表面 #212121、边框 #363636；浅色白底、#fafafa 表面、#e5e5e5 边框。保留清晰焦点、switch/aria-checked、aria-pressed、aria-live、错误提示和 reduced-motion。弹窗 390px 宽、主要控件在 600px 高度内完整显示；详细说明放设置页。
 

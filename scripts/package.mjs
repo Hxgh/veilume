@@ -8,7 +8,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const output = path.resolve(process.argv[2] || path.join(root, "releases"));
 const { version } = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 const { stats } = JSON.parse(await readFile(path.join(root, "test-results/results.json"), "utf8"));
-if (stats.unexpected || stats.skipped || stats.flaky || stats.expected < 40) {
+if (stats.unexpected || stats.skipped || stats.flaky || stats.expected < 52) {
   throw new Error("完整端到端测试尚未全部通过，请先运行 npm run test:e2e");
 }
 const installFolder = path.join(output, "veilume");
@@ -36,6 +36,7 @@ for (const [source, destination] of [
   ["test-results/before.png", "网页改色前.png"], ["test-results/after.png", "网页改色后.png"],
   ["test-results/options.png", "设置页.png"]
 ]) await cp(path.join(root, source), path.join(output, destination));
+for (const name of ["media-protected.png", "media-filtered.png"]) await cp(path.join(root, "test-results", name), path.join(output, name));
 const guide = (await readFile(path.join(root, "README.md"), "utf8"))
   .replace("docs/DESIGN.md", "设计方案与开源调研.md")
   .replace("docs/TESTING.md", "测试报告.md")

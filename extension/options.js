@@ -9,6 +9,7 @@
     $("enabled").checked = settings.enabled;
     $("global-mode").value = settings.mode;
     $("filter-preset").value = settings.filterPreset;
+    $("preserve-media").checked = settings.preserveMedia;
     $("protect-native").checked = settings.protectNative;
     const entries = Object.entries(settings.sites).sort(([a], [b]) => a.localeCompare(b));
     $("site-count").textContent = String(entries.length);
@@ -39,6 +40,7 @@
   $("enabled").addEventListener("change", event => save({ action: "global", enabled: event.target.checked }));
   $("global-mode").addEventListener("change", event => save({ action: "global", mode: event.target.value }));
   $("filter-preset").addEventListener("change", event => save({ action: "global", filterPreset: event.target.value }));
+  $("preserve-media").addEventListener("change", event => save({ action: "global", preserveMedia: event.target.checked }));
   $("protect-native").addEventListener("change", event => save({ action: "global", protectNative: event.target.checked }));
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes[Core.KEY]) { settings = Core.normalizeSettings(changes[Core.KEY].newValue); render(); }

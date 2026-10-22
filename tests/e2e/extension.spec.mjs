@@ -11,7 +11,7 @@ const pageErrors = [];
 
 async function reset(overrides = {}) {
   await worker.evaluate(async ({ key, overrides }) => {
-    await chrome.storage.local.set({ [key]: { version: 3, enabled: true, mode: "system", filterPreset: "balanced", protectNative: true, sites: {}, ...overrides } });
+    await chrome.storage.local.set({ [key]: { version: 4, enabled: true, mode: "system", filterPreset: "balanced", preserveMedia: true, protectNative: true, sites: {}, ...overrides } });
   }, { key, overrides });
 }
 async function status(url = page.url()) {
@@ -133,8 +133,8 @@ test("异步原生深色 CSS 能撤销反色", async () => {
   await page.goto(`${base}/style-late`); await reason("converted"); await reason("native-dark");
 });
 
-test("图片、背景图、Canvas、视频海报、SVG 都参与同一次变换", async () => {
-  await reset({ enabled: false }); await page.goto(`${base}/lab`); await reason("disabled");
+test("关闭媒体保护：图片、背景图、Canvas、视频海报、SVG 都参与同一次变换", async () => {
+  await reset({ enabled: false, preserveMedia: false }); await page.goto(`${base}/lab`); await reason("disabled");
   const selectors = ["#lab-image", "#lab-background", "#lab-canvas", "#lab-video", "#lab-svg"];
   const before = await Promise.all(selectors.map(selector => sample(selector)));
   expect(before.every(rgb => mean(rgb) > 200)).toBe(true);
@@ -143,6 +143,206 @@ test("图片、背景图、Canvas、视频海报、SVG 都参与同一次变换"
   expect(after.every(rgb => mean(rgb) < 70), JSON.stringify(after)).toBe(true);
   // No reverse filters or per-element edits, including background images.
   for (const selector of selectors) expect(await page.locator(selector).evaluate(el => getComputedStyle(el).filter)).toBe("none");
+});
+
+test("默认保护 picture 图片、视频海报与 Canvas，保留明暗方向与中间色", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  expect((await status()).preserveMedia).toBe(true);
+  for (const selector of ["#content-photo", "#content-video", "#content-canvas"]) {
+    await expect(page.locator(selector)).toHaveAttribute("data-veilume-media", "");
+    const color = await sample(selector, .25, .25);
+    // Compensation retains polarity, but tone compression still comes from root.
+    const expected = [96, 128, 160].map(c => c * .836 + .95 * .06 * 255);
+    color.forEach((c, i) => expect(Math.abs(c - expected[i]), `${selector}: ${color}`).toBeLessThan(4));
+    expect(mean(await sample(selector, .8, .75))).toBeGreaterThan(225);
+    expect(mean(await sample(selector, .25, .75))).toBeLessThan(20);
+  }
+  await page.screenshot({ path: "test-results/media-protected.png" });
+  await patch({ action: "global", preserveMedia: false });
+  await expect(page.locator("[data-veilume-media]")).toHaveCount(0);
+  expect(mean(await sample("#content-photo", .8, .75))).toBeLessThan(20);
+  await page.screenshot({ path: "test-results/media-filtered.png" });
+});
+
+test("装饰图、logo、小图标、空 alt、背景和内联 SVG 不豁免，不覆盖网站滤镜", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  await expect(page.locator("#content-photo")).toHaveAttribute("data-veilume-media", "");
+  for (const selector of ["#decorative", "#brand-logo", "#small", "#empty-alt", "#presentational", "#background", "#inline-svg", "#authored"]) {
+    expect(await page.locator(selector).getAttribute("data-veilume-media"), selector).toBeNull();
+    expect(mean(await sample(selector, .8, .75)), selector).toBeLessThan(25);
+  }
+  expect(await page.locator("#authored").evaluate(el => getComputedStyle(el).filter)).toBe("grayscale(1)");
+});
+
+test("媒体开关可从弹窗和设置页控制，跨标签同步并在刷新后保留", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  const other = await context.newPage(); await other.goto("http://localhost:4173/media");
+  const ui = await popup();
+  await expect(ui.locator("#preserve-media")).toBeChecked();
+  await ui.locator("#preserve-media").uncheck();
+  await expect.poll(async () => (await status())?.preserveMedia).toBe(false);
+  await expect(other.locator("[data-veilume-media]")).toHaveCount(0);
+  await page.reload(); await reason("converted");
+  expect((await status()).preserveMedia).toBe(false);
+  await expect(page.locator("[data-veilume-media]")).toHaveCount(0);
+  await ui.goto(`chrome-extension://${id}/options.html`);
+  await expect(ui.locator("#preserve-media")).not.toBeChecked();
+  await ui.locator("#preserve-media").check();
+  await expect(page.locator("#content-photo")).toHaveAttribute("data-veilume-media", "");
+  await expect(other.locator("#content-photo")).toHaveAttribute("data-veilume-media", "");
+  await expect(ui.locator("#global-mode")).toHaveValue("system");
+  await ui.close(); await other.close();
+});
+
+test("动态与懒加载媒体、语义和尺寸变化重新分类，删除后清理标记", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  await page.locator("#add-media").click();
+  const image = page.locator("#dynamic-media");
+  await expect(image).toHaveAttribute("data-veilume-media", "");
+  await image.evaluate(el => { el.alt = "公司 logo"; });
+  await expect(image).not.toHaveAttribute("data-veilume-media", "");
+  await image.evaluate(el => { el.alt = "照片"; el.style.width = "24px"; });
+  await expect(image).not.toHaveAttribute("data-veilume-media", "");
+  await image.evaluate(el => { el.style.width = "160px"; el.src = "/media.svg?lazy=1"; });
+  await expect(image).toHaveAttribute("data-veilume-media", "");
+  await image.evaluate(el => { window.removedMedia = el; el.remove(); });
+  await expect.poll(() => page.evaluate(() => window.removedMedia.hasAttribute("data-veilume-media"))).toBe(false);
+  await page.evaluate(() => {
+    const img = document.createElement("img"); img.id = "lazy-media"; img.alt = "等待载入的照片";
+    document.querySelector("main").append(img);
+  });
+  await expect(page.locator("#lazy-media")).not.toHaveAttribute("data-veilume-media", "");
+  await page.locator("#lazy-media").evaluate(el => { el.src = "/media.svg"; });
+  await expect(page.locator("#lazy-media")).toHaveAttribute("data-veilume-media", "");
+});
+
+test("网站后加自己的媒体滤镜时让位，移除后重新保护", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  const image = page.locator("#content-photo");
+  await expect(image).toHaveAttribute("data-veilume-media", "");
+  await image.evaluate(el => { el.style.filter = "grayscale(1)"; });
+  await expect(image).not.toHaveAttribute("data-veilume-media", "");
+  expect(await image.evaluate(el => getComputedStyle(el).filter)).toBe("grayscale(1)");
+  await image.evaluate(el => { el.style.removeProperty("filter"); });
+  await expect(image).toHaveAttribute("data-veilume-media", "");
+});
+
+test("网站动态样式表的媒体滤镜在主题重检时让位", async () => {
+  await page.goto(`${base}/plain`); await reason("converted");
+  const image = page.locator("#photo");
+  await expect(image).toHaveAttribute("data-veilume-media", "");
+  await page.evaluate(() => {
+    const style = document.createElement("style");
+    style.textContent = "#photo { filter: grayscale(1); }";
+    document.head.append(style);
+  });
+  await expect(image).not.toHaveAttribute("data-veilume-media", "");
+  expect(await image.evaluate(el => getComputedStyle(el).filter)).toBe("grayscale(1)");
+});
+
+test("真实视频解码帧保留明暗方向，非仅海报，测试后暂停卸载", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  expect(mean(await sample("#content-canvas"))).toBeGreaterThan(225);
+  await page.evaluate(async () => {
+    const video = document.getElementById("content-video");
+    video.src = "/media.webm";
+    video.muted = true;
+    video.loop = true;
+    await video.play();
+  });
+  await expect(page.locator("#content-video")).toHaveAttribute("data-veilume-media", "");
+  expect(mean(await sample("#content-video", .8, .75))).toBeGreaterThan(225);
+  expect(mean(await sample("#content-video", .25, .75))).toBeLessThan(20);
+  await patch({ action: "global", preserveMedia: false });
+  await expect(page.locator("[data-veilume-media]")).toHaveCount(0);
+  expect(mean(await sample("#content-video", .8, .75))).toBeLessThan(20);
+  await page.evaluate(() => {
+    const video = document.getElementById("content-video");
+    video.pause(); video.removeAttribute("src"); video.load();
+  });
+});
+
+test("不豁免 iframe 或 Shadow DOM 宿主，封闭与开放根内媒体仍随整页变换", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  await page.evaluate(() => {
+    for (const mode of ["open", "closed"]) {
+      const host = document.createElement("div"); host.id = `media-${mode}`;
+      const shadow = host.attachShadow({ mode });
+      const image = document.createElement("img"); image.src = "/media.svg"; image.alt = "Shadow 内容照片";
+      image.width = 160; image.height = 100; shadow.append(image);
+      document.body.append(host);
+    }
+    const frame = document.createElement("iframe"); frame.id = "media-frame"; frame.src = "/media";
+    document.body.append(frame);
+  });
+  await expect(page.locator("#media-open img")).toBeVisible();
+  expect(mean(await sample("#media-open img"))).toBeLessThan(20);
+  expect(await page.locator("#media-open img").getAttribute("data-veilume-media")).toBeNull();
+  expect(await page.locator("#media-closed").getAttribute("data-veilume-media")).toBeNull();
+  const frame = page.frameLocator("#media-frame");
+  await expect(frame.locator("#content-photo")).toBeVisible();
+  expect(await frame.locator("#content-photo").getAttribute("data-veilume-media")).toBeNull();
+});
+
+test("媒体保护跟随均衡与低亮的统一亮度，不改变预设决策", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  expect(mean(await sample("#content-photo"))).toBeGreaterThan(225);
+  await patch({ action: "global", filterPreset: "dim" });
+  await expect.poll(async () => (await status())?.filterPreset).toBe("dim");
+  const white = mean(await sample("#content-photo"));
+  expect(white).toBeGreaterThan(192); expect(white).toBeLessThan(200);
+  expect(mean(await sample("#decorative"))).toBeLessThan(16);
+});
+
+test("对话框、Popover 和容器全屏内媒体只补偿一次", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  await page.locator("#dialog-open").click();
+  await expect(page.locator("#dialog-photo")).toHaveAttribute("data-veilume-media", "");
+  expect(mean(await sample("#dialog-photo"))).toBeGreaterThan(225);
+  expect(mean(await sample("#dialog", .99, .5))).toBeLessThan(20);
+  await page.locator("#dialog-close").click();
+  await page.locator("#popover-open").click();
+  await expect(page.locator("#popover-photo")).toHaveAttribute("data-veilume-media", "");
+  expect(mean(await sample("#popover-photo"))).toBeGreaterThan(225);
+  await page.keyboard.press("Escape");
+  await page.locator("#screen-open").click();
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement?.id)).toBe("screen");
+  expect(mean(await sample("#screen-photo"))).toBeGreaterThan(225);
+  expect(mean(await sample("#screen", .9, .8))).toBeLessThan(20);
+  await page.evaluate(() => document.exitFullscreen());
+});
+
+test("视频本身全屏时不反色，退出继续保护，关闭开关则恢复统一算法", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  await page.locator("#video-open").click();
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement?.id)).toBe("content-video");
+  expect(await page.locator("#content-video").evaluate(el => getComputedStyle(el).filter)).toBe("none");
+  expect(mean(await sample("#content-video", .8, .5))).toBe(255);
+  await patch({ action: "global", preserveMedia: false });
+  await expect.poll(() => page.locator("#content-video").evaluate(el => getComputedStyle(el).filter)).toContain("invert(1)");
+  expect(mean(await sample("#content-video", .8, .5))).toBeLessThan(20);
+  await page.evaluate(() => document.exitFullscreen());
+  await patch({ action: "global", preserveMedia: true });
+  await expect(page.locator("#content-video")).toHaveAttribute("data-veilume-media", "");
+  expect(mean(await sample("#content-video"))).toBeGreaterThan(225);
+});
+
+test("打印、系统浅色、暂停与原生深色时不残留媒体补偿", async () => {
+  await page.goto(`${base}/media`); await reason("converted");
+  await page.emulateMedia({ media: "print" });
+  expect(await page.locator("#content-photo").evaluate(el => getComputedStyle(el).filter)).toBe("none");
+  expect(mean(await sample("#content-photo"))).toBe(255);
+  await page.emulateMedia({ media: "screen", colorScheme: "light" }); await reason("system-light");
+  await expect(page.locator("[data-veilume-media]")).toHaveCount(0);
+  expect(await page.locator("html").getAttribute("data-system-shade-media")).toBeNull();
+  await page.emulateMedia({ colorScheme: "dark" }); await reason("converted");
+  await expect(page.locator("#content-photo")).toHaveAttribute("data-veilume-media", "");
+  await patch({ action: "global", enabled: false }); await reason("disabled");
+  await expect(page.locator("[data-veilume-media]")).toHaveCount(0);
+  expect(mean(await sample("#content-photo"))).toBe(255);
+  await patch({ action: "global", enabled: true });
+  await page.goto(`${base}/native`); await reason("native-dark");
+  await expect(page.locator("[data-veilume-media]")).toHaveCount(0);
 });
 
 test("大亮背景、黑色 logo、公告条一起转换，复现截图问题的回归", async () => {
@@ -161,7 +361,7 @@ test("大亮背景、黑色 logo、公告条一起转换，复现截图问题的
 test("亮色地图画布背后的黑色 CSS 不能冒充原生深色", async () => {
   await page.goto(`${base}/canvas-fallback`); await reason("converted");
   expect((await status()).detection.unknownSamples).toBe(20);
-  expect(mean(await sample("#full-canvas"))).toBeLessThan(20);
+  expect(mean(await sample("#full-canvas"))).toBeGreaterThan(220);
 });
 
 test("同源、跨域和 srcdoc iframe 只反色一次，子框架无控制器", async () => {

@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "晦明 · Veilume",
   "short_name": "晦明",
-  "description": "用统一反色算法让浅色网页变暗，跟随系统切换；已是深色的网页保持原貌。图片也参与变换。",
-  "version": "2.1.0",
+  "description": "用统一反色算法让浅色网页变暗，跟随系统切换；默认保留媒体色彩，可随时关闭，已是深色的网页保持原貌。",
+  "version": "2.2.0",
   "minimum_chrome_version": "120",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
@@ -17,7 +17,7 @@
   "content_scripts": [{
     "matches": ["http://*/*", "https://*/*"],
     "css": ["engine.css"],
-    "js": ["core.js", "detector.js", "content.js"],
+    "js": ["core.js", "detector.js", "media.js", "content.js"],
     "run_at": "document_start",
     "all_frames": false
   }],
