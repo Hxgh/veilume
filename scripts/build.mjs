@@ -9,6 +9,7 @@ await rm(dist, { recursive: true, force: true });
 await cp(path.join(root, "extension"), dist, { recursive: true });
 await cp(path.join(root, "THIRD_PARTY_NOTICES.md"), path.join(dist, "THIRD_PARTY_NOTICES.md"));
 await cp(path.join(root, "LICENSE"), path.join(dist, "LICENSE"));
+await cp(path.join(root, "PRIVACY.md"), path.join(dist, "PRIVACY.md"));
 
 function crc32(bytes) {
   let crc = 0xffffffff;
@@ -26,12 +27,14 @@ function chunk(type, data) {
 }
 function icon(size) {
   const pixels = Buffer.alloc((size * 4 + 1) * size);
+  // The store's 128px square icon needs ~96px artwork with transparent padding.
+  const scale = size === 128 ? 0.8 : 1;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const total = [0, 0, 0, 0];
       for (let sy = 0; sy < 4; sy++) for (let sx = 0; sx < 4; sx++) {
-        const px = (x + (sx + 0.5) / 4) / size;
-        const py = (y + (sy + 0.5) / 4) / size;
+        const px = ((x + (sx + 0.5) / 4) / size - 0.5) / scale + 0.5;
+        const py = ((y + (sy + 0.5) / 4) / size - 0.5) / scale + 0.5;
         const dx = Math.max(0.23 - px, 0, px - 0.77);
         const dy = Math.max(0.23 - py, 0, py - 0.77);
         let c = dx * dx + dy * dy <= 0.2 ** 2 ? [38, 38, 38, 255] : [0, 0, 0, 0];

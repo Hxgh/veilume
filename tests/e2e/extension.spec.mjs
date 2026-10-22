@@ -668,5 +668,11 @@ test("中性黑白灰界面、600px 内完整显示、无横向溢出", async ()
   await ui.screenshot({ path: "test-results/options.png", fullPage: true, animations: "disabled" });
   await ui.setViewportSize({ width: 390, height: 900 });
   expect(await ui.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  // Real, synthetic-only screenshots at the store's accepted 16:10 size.
+  await ui.setViewportSize({ width: 1280, height: 800 });
+  await ui.emulateMedia({ colorScheme: "dark" });
+  await ui.screenshot({ path: "test-results/store-settings.png", animations: "disabled" });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.screenshot({ path: "test-results/store-page.png", animations: "disabled" });
   await ui.close();
 });

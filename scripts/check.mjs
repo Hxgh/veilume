@@ -17,10 +17,12 @@ for (const file of (await files(path.join(root, "extension"))).filter(file => fi
 const manifest = JSON.parse(await readFile(path.join(root, "dist/manifest.json"), "utf8"));
 const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 if (manifest.version !== pkg.version) throw new Error("扩展与 package 版本不一致");
+if ((await readFile(path.join(root, "dist/options.html"), "utf8")).includes(`v${pkg.version}`) === false) throw new Error("设置页版本不一致");
+if (manifest.description.length > 132) throw new Error("商店简述超过 132 字符");
 if (manifest.name !== "晦明 · Veilume") throw new Error("扩展名称不一致");
 if (manifest.manifest_version !== 3) throw new Error("需要 Manifest V3");
 const referenced = [manifest.background.service_worker, manifest.action.default_popup, manifest.options_page,
-  ...Object.values(manifest.icons), ...manifest.content_scripts.flatMap(script => [...script.js, ...script.css])];
+  "PRIVACY.md", ...Object.values(manifest.icons), ...manifest.content_scripts.flatMap(script => [...script.js, ...script.css])];
 for (const file of referenced) await access(path.join(root, "dist", file));
 for (const file of (await files(path.join(root, "dist"))).filter(file => file.endsWith(".html"))) {
   const source = await readFile(file, "utf8");

@@ -29,6 +29,14 @@ No build is needed for release ZIPs: unzip, open `chrome://extensions/`, enable 
 
 普通使用不需要 Node.js。要求 Chrome 120+；实际验证版本见[测试报告](docs/TESTING.md)。尚未发布 Chrome 商店，没有扩展代码自动更新；请保留加载目录。
 
+### 只能我自己离线安装吗？
+
+不是。任何人都能从公开 GitHub Release 下载并手动加载，不需要联网激活；这是**本地安装方式**，不是用户身份限制，也不代表网页可以离线访问。
+
+希望一键安装并自动更新，可以进一步发布到 Chrome Web Store：Public 公开可搜索，Unlisted 仅凭链接分享（任何知道链接的人都能安装），Private 限指定测试者。它们均需开发者账号及审核，目前都**没有上架或提交**。
+
+2.2.1 起另外提供 `veilume-版本号-webstore.zip`（manifest 在 ZIP 根），以及商店截图、隐私和权限文案；这只是上传材料，不是已审核的商店安装包。普通 Windows／macOS 不能把自托管 CRX 当作常规商店安装替代；企业策略另论。详见[安装、分发与更新](docs/DISTRIBUTION.md)和[商店提交材料](docs/STORE_LISTING.md)。
+
 ## 两种效果，三种外观
 
 “全局外观”决定**什么时候处理**；“显示效果”决定**怎样显示**，两者独立。
@@ -78,7 +86,7 @@ filter: invert(1) hue-rotate(180deg) contrast(0.88) brightness(0.82);
 - 原生对话框、Popover 和顶层文档全屏元素使用同一预设；打印不反色。
 - 20 点背景取样保护已有深色；图片、透明命中层等不确定像素不当作深色证据。识别可能误判，可手动纠正。
 - 不支持 Chrome 内部页、扩展商店、内置 PDF、本地文件、独立图片／SVG 文档。嵌入页独立全屏、原生菜单、复杂根滤镜等可能有差异；首次加载可能短暂出现原色。
-- 无账号、广告、统计、网络读取、云同步或远程代码。只在 `chrome.storage.local` 保存偏好及手动设置过例外的主机名，不保存正文、密码或访问历史。
+- 无账号、广告、统计、网络读取、云同步或远程代码。在本地处理网页主题样式与媒体属性，只在 `chrome.storage.local` 保存偏好及手动设置过例外的主机名，不保存正文、密码或访问时间／次数；不向开发者上传。详见[隐私声明](PRIVACY.md)。
 - 网站权限用于自动识别与显示处理；`storage` 保存设置；`activeTab` / `scripting` 用于弹窗接入安装前的页面。可在 Chrome 扩展详情中缩小授权范围。
 
 ## 更新与迁移
@@ -106,6 +114,8 @@ npx playwright install --with-deps chromium
 SHADE_BROWSER=chromium npm run test:e2e
 ```
 
+构建／打包验证使用 Node.js 22+ 和 `zip` / `unzip` 命令，已在 macOS 与 Ubuntu CI 验证；这些都不是普通用户安装所需的依赖。打包会生成手动安装、商店上传和源码三种 ZIP，并检查实际 ZIP 文件清单、字节一致性及商店截图尺寸。
+
 CI 使用 GitHub Ubuntu 镜像预装的 Chrome 运行固定本地测试，不重复下载浏览器，也不依赖外部网站。`npm run test:smoke` 为可选公网页面抽查；`VEILUME_PRESET=dim npm run test:smoke` 测低亮。结果与真实网页截图默认忽略，不提交到 Git。
 
 `npm run demo` 启动本机演示：`http://127.0.0.1:4173/split-login`、`/media`、`/lab`、`/native`。Ctrl+C 结束。
@@ -118,6 +128,10 @@ CI 使用 GitHub Ubuntu 镜像预装的 Chrome 运行固定本地测试，不重
 - [测试报告](docs/TESTING.md)
 - [贡献与发布流程](CONTRIBUTING.md)
 - [版本记录](CHANGELOG.md)
+- [隐私声明](PRIVACY.md)
+- [分发与更新](docs/DISTRIBUTION.md)
+- [商店文案与审核步骤](docs/STORE_LISTING.md)
+- [工程收口与交接](docs/HANDOFF.md)
 - [开源许可说明](THIRD_PARTY_NOTICES.md)
 
 MIT License © 2026 Hxgh.
