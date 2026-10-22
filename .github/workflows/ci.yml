@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,10 +21,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run check
-      - run: npx playwright install --with-deps chromium
+      # GitHub's Ubuntu image already ships Chrome with its system libraries.
+      # Avoid reinstalling OS dependencies and downloading another browser.
+      - run: google-chrome --version
       - run: npm run test:e2e
         env:
-          SHADE_BROWSER: chromium
+          SHADE_BROWSER: chrome
       - run: npm run package
       - uses: actions/upload-artifact@v4
         if: always()

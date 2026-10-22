@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- CI 使用 Ubuntu 24.04 预装 Chrome，避免首次安装系统依赖和浏览器导致超时；不改变扩展运行时代码。
+
 ## 2.1.0 — 2026-10-23
 
 - 定名“晦明 · Veilume”，首个公开版本，MIT 许可。

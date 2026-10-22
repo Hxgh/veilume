@@ -91,7 +91,7 @@ npx playwright install --with-deps chromium
 SHADE_BROWSER=chromium npm run test:e2e
 ```
 
-CI 使用 Playwright Chromium 运行固定本地测试，不依赖外部网站。`npm run test:smoke` 为可选公网页面抽查；`VEILUME_PRESET=dim npm run test:smoke` 测低亮。结果与真实网页截图默认忽略，不提交到 Git。
+CI 使用 GitHub Ubuntu 镜像预装的 Chrome 运行固定本地测试，不重复下载浏览器，也不依赖外部网站。`npm run test:smoke` 为可选公网页面抽查；`VEILUME_PRESET=dim npm run test:smoke` 测低亮。结果与真实网页截图默认忽略，不提交到 Git。
 
 `npm run demo` 启动本机演示：`http://127.0.0.1:4173/split-login`、`/lab`、`/native`。Ctrl+C 结束。
 

@@ -19,7 +19,7 @@
 | 误判回归 | 大亮背景与黑 logo 同步；黑 fallback／透明命中层不冒充原生深色 |
 | 安全与 UI | 严格 CSP、无后台 CSS 请求、受限页、同类引擎、打印、并发保存、被阻止滤镜、390×600 弹窗与窄屏 |
 
-本地：macOS 27 arm64、Node 25、Chrome 155。GitHub CI 使用 Node 22 与 Playwright Chromium；线上最终状态见 Actions。外部网站是可选抽查，不作为固定 CI 稳定性的前提。
+本地：macOS 27 arm64、Node 25、Chrome 155。GitHub CI 使用 Node 22 与 Ubuntu 24.04 镜像预装的 Chrome，避免重复下载浏览器；线上最终状态见 Actions。外部网站是可选抽查，不作为固定 CI 稳定性的前提。
 
 本轮本地 29/29 单测与 40/40 端到端全部通过。均衡和低亮分别完成 5 个公网页面的启用／撤销抽查：已有深色的 example.com、MDN 保持原貌；百度地图、IANA、CERN 使用选定预设统一变暗。
 
