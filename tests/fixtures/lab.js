@@ -1,0 +1,12 @@
+const canvas = document.getElementById("lab-canvas");
+const ctx = canvas.getContext("2d");
+ctx.fillStyle = "white"; ctx.fillRect(0, 0, 120, 80);
+ctx.fillStyle = "#477bf5"; ctx.fillRect(0, 0, 25, 80);
+document.getElementById("dialog-open").onclick = () => document.getElementById("lab-dialog").showModal();
+document.getElementById("dialog-close").onclick = () => document.getElementById("lab-dialog").close();
+document.getElementById("fullscreen-open").onclick = () => document.getElementById("fullscreen-box").requestFullscreen();
+const shadow = document.getElementById("closed-shadow").attachShadow({ mode: "closed" });
+const surface = document.createElement("div");
+surface.textContent = "封闭 Shadow DOM";
+surface.style.cssText = "background:white;color:black;width:120px;height:80px";
+shadow.append(surface);

@@ -1,0 +1,23 @@
+{
+  "name": "veilume",
+  "version": "2.1.0",
+  "private": true,
+  "description": "晦明 · Veilume：明暗有度，跟随系统的整页反色扩展",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Hxgh/veilume.git" },
+  "bugs": { "url": "https://github.com/Hxgh/veilume/issues" },
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/unit/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:smoke": "node scripts/smoke.mjs",
+    "check": "node scripts/check.mjs && npm test",
+    "package": "npm run build && node scripts/package.mjs",
+    "demo": "node tests/server.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

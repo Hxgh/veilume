@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>偏好与站点 · 晦明</title><link rel="stylesheet" href="ui.css"></head>
+<body class="options">
+  <div class="options-shell">
+    <header class="options-header"><div class="brand"><img src="icons/icon48.png" width="34" height="34" alt=""><div><h1>晦明 <span>Veilume</span></h1><p>明暗有度，随系统而变。</p></div></div><span class="version">本地运行 · v2.1.0</span></header>
+    <main>
+      <div class="page-title"><h2>偏好设置</h2><p>一个算法处理整个页面，保留简单、明确的控制。</p></div>
+      <section class="panel" aria-labelledby="global-heading"><div class="panel-heading"><h3 id="global-heading">默认行为</h3><span class="muted">网站例外优先</span></div>
+        <div class="setting-row"><label for="enabled">启用晦明<small>暂停后恢复网页原貌，保留所有偏好</small></label><input id="enabled" class="check-switch" type="checkbox"></div>
+        <div class="setting-row"><label for="global-mode">全局外观</label><select id="global-mode"><option value="system">跟随系统</option><option value="dark">始终深色</option><option value="light">网页原貌</option></select></div>
+        <div class="setting-row"><label for="filter-preset">显示效果<small>均衡保留清晰层次；低亮降低高光。与外观模式独立。</small></label><select id="filter-preset"><option value="balanced">均衡（推荐）</option><option value="dim">低亮</option></select></div>
+        <div class="setting-row"><label for="protect-native">跳过已经是深色的页面<small>避免把网站原生深色再次反成浅色</small></label><input id="protect-native" class="check-switch" type="checkbox"></div>
+      </section>
+      <section class="panel" aria-labelledby="sites-heading"><div class="panel-heading"><h3 id="sites-heading">网站例外 <span id="site-count" class="count">0</span></h3><span class="muted">按完整主机名记忆</span></div><p class="helper">在工具栏弹窗中设置。子域分别记忆；同一主机名的不同端口共用偏好。</p><div id="sites"></div><p id="empty-sites" class="empty-state">暂无例外，所有网站跟随全局外观。</p></section>
+      <section class="panel guide" aria-labelledby="guide-heading"><h3 id="guide-heading">工作方式与边界</h3>
+        <ol><li><strong>看当前外观。</strong>用可视区域背景取样判断页面是否已暗；CSS 声明只是辅助线索，不是识别结果。</li><li><strong>整页统一变换。</strong>反色 → 色相旋转 180° → 对比度 88% → 亮度修正。均衡为 95%，低亮为 82%；都不改写每个元素的颜色，不额外抓取外部 CSS。</li><li><strong>一键撤销。</strong>系统切回浅色或选择“原貌”，移除变换，不操作网站自己的主题按钮。</li></ol>
+        <details><summary>为什么图片也会改变？</summary><p>图片、渐变、图表、Canvas、视频和 iframe 都参与同一变换。这能避免大块亮背景与变暗表单割裂，但照片和地图的颜色不再真实，原本的深色区域也可能变亮。用于设计审图、修图、看视频或核对图表颜色时，请对该网站选择“恢复原貌”。这不是网站原生主题的完美替代。</p></details>
+        <details><summary>兼容范围</summary><p>支持普通 HTTP / HTTPS HTML 网页，包括开放和封闭 Shadow DOM、同源和跨域 iframe 的合成画面。只在最顶层反色一次；对话框、Popover 和全屏元素使用同一算法。打印不应用变换。</p><p>Chrome 内部页、扩展商店、内置 PDF 阅读器、本地文件及独立 SVG 文档不支持。原生识别是启发式判断，无法读取图片内部亮度；混合深浅背景、嵌入页独立全屏、浏览器原生下拉菜单及特殊根元素滤镜可能存在差异。首次加载可能短暂显示原色。遇到误判可“强制反色”或恢复本站原貌。</p></details>
+        <details><summary>权限与隐私</summary><p>运行时零第三方依赖，无账号、广告、统计和网络读取。只在 chrome.storage.local 保存偏好及你设置过例外的主机名；不保存网页正文、账号、密码或访问历史，不上传或同步数据。</p><p>“读取和更改所有网站”用于自动检测和整页变换；storage 保存设置；activeTab 与 scripting 只用于弹窗接入安装前已打开的网页。可以在 Chrome 扩展详情中缩小网站授权范围。不建议叠加其他深色扩展；升级或卸载后，请刷新原有页面以清理旧脚本。</p></details>
+        <details><summary>开源参考</summary><p>算法调研参考 <a href="https://github.com/darkreader/darkreader/blob/main/src/generators/css-filter.ts" target="_blank" rel="noreferrer">Dark Reader 的 Filter 模式</a>；界面参考 <a href="https://ui.shadcn.com/docs/theming" target="_blank" rel="noreferrer">shadcn/ui Neutral</a> 的语义色与中性层次。本版独立实现，不再捆绑 Dark Reader，不使用网站专用修补规则。详见源码的设计方案和许可说明。</p></details>
+      </section>
+      <p id="error" role="alert" class="error" hidden></p>
+    </main>
+    <footer class="options-footer">晦明 · Veilume · 明暗有度，本地运行。</footer>
+  </div>
+  <script src="core.js"></script><script src="ui-common.js"></script><script src="options.js"></script>
+</body></html>

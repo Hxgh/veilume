@@ -1,0 +1,21 @@
+/* One compositing transform; no element color overrides or media exceptions.
+   Only the top document receives this stylesheet. Its iframe pixels therefore
+   pass through the transform once, including cross-origin frames. */
+@media screen {
+  html[data-system-shade="on"] {
+    --veilume-brightness: 0.95 !important;
+  }
+  html[data-system-shade="on"][data-system-shade-preset="dim"] {
+    --veilume-brightness: 0.82 !important;
+  }
+  html[data-system-shade="on"],
+  html[data-system-shade="on"] :is(:modal, :popover-open, :fullscreen) {
+    filter: invert(1) hue-rotate(180deg) contrast(0.88) brightness(var(--veilume-brightness)) !important;
+  }
+
+  /* The browser's unpainted canvas is outside the filtered subtree. Supply its
+     native Canvas color when the original root AND body are transparent. */
+  html[data-system-shade="on"][data-system-shade-canvas] {
+    background-color: Canvas !important;
+  }
+}

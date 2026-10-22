@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>晦明 · Veilume</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+  <header class="brand-header">
+    <div class="brand"><img src="icons/icon48.png" width="32" height="32" alt=""><div><h1>晦明 <span>Veilume</span></h1><p>明暗有度，随系统而变。</p></div></div>
+    <button id="enabled" class="switch" type="button" role="switch" aria-label="启用晦明" aria-checked="true"><span></span></button>
+  </header>
+  <main>
+    <section class="status-card" aria-labelledby="status-title">
+      <div class="status-top"><span class="eyebrow"><i class="live-dot"></i>当前页面</span><span id="system-label" class="system-chip">正在读取系统</span></div>
+      <h2 id="status-title" aria-live="polite">正在识别网页</h2>
+      <p id="status-description">检查网页当前的明暗外观。</p>
+    </section>
+    <section class="mode-section" aria-labelledby="mode-heading">
+      <div class="section-heading"><h2 id="mode-heading">全局外观</h2><span>自动保存</span></div>
+      <div class="mode-picker" role="group" aria-label="全局外观">
+        <button type="button" data-mode="system" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>跟随系统</button>
+        <button type="button" data-mode="dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14a9 9 0 0 1-10.5-10.5A9 9 0 1 0 20.5 14Z"></path></svg>深色</button>
+        <button type="button" data-mode="light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"></path></svg>原貌</button>
+      </div>
+      <div class="preset-row"><label for="filter-preset">显示效果</label><select id="filter-preset"><option value="balanced">均衡（推荐）</option><option value="dim">低亮</option></select><button id="reset-preset" class="text-button" type="button" hidden>恢复推荐</button></div>
+      <p class="helper" id="mode-note">系统深色时统一反色；系统浅色时恢复原貌。</p>
+    </section>
+    <section class="site-card" aria-labelledby="site-heading">
+      <div class="site-heading"><div class="site-symbol" aria-hidden="true">◎</div><div class="site-name"><span id="site-heading">当前网站</span><strong id="hostname">正在读取…</strong></div><button id="reset-site" class="text-button" type="button" title="清除本站所有例外设置" hidden>重置</button></div>
+      <div class="setting-row"><label for="site-mode">本站外观</label><select id="site-mode" disabled><option value="inherit">跟随全局</option><option value="system">跟随系统</option><option value="dark">始终深色</option><option value="off">恢复原貌</option></select></div>
+      <div class="setting-row"><label for="force">强制反色<small>忽略“页面已是深色”的判断</small></label><input id="force" class="check-switch" type="checkbox" disabled></div>
+    </section>
+    <details id="diagnostics" class="diagnostics"><summary>识别详情<span aria-hidden="true">＋</span></summary><p id="detection-detail">检测中…</p><p id="warning" class="warning" hidden></p></details>
+    <p class="engine-note">统一处理整个页面，图片、视频和地图也会反色。</p>
+    <p id="error" role="alert" class="error" hidden></p>
+  </main>
+  <footer class="popup-footer"><button id="options" class="text-button" type="button">偏好与站点管理 ↗</button><button id="recheck" class="text-button" type="button">↻ 重新检测</button></footer>
+  <script src="core.js"></script><script src="ui-common.js"></script><script src="popup.js"></script>
+</body>
+</html>
